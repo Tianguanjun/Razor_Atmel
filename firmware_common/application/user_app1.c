@@ -87,6 +87,14 @@ Promises:
 */
 void UserApp1Initialize(void)
 {
+  LedOff(WHITE);
+  LedOff(PURPLE);
+  LedOff(BLUE);
+  LedOff(CYAN);
+  LedOff(GREEN);
+  LedOff(YELLOW);
+  LedOff(ORANGE);
+  LedOff(RED);
  
   /* If good initialization, set state to Idle */
   if( 1 )
@@ -136,6 +144,112 @@ State Machine Function Definitions
 /* Wait for ??? */
 static void UserApp1SM_Idle(void)
 {
+  static u8 u8Index = 0;
+  static bool bResetIsOn = TRUE;
+  static bool bStartIsOn = FALSE;
+  static u16 auPasswordNew[10]= {0};
+  static u16 auPasswordElement[10] = {0};
+  
+  
+  if ( IsButtonHeld(BUTTON3,1500) )
+  {
+    ButtonAcknowledge(BUTTON3);
+    u8Index = 0;
+    LedOff(GREEN);   
+    LedOff(RED);
+    LedBlink(RED,LED_4HZ);     
+    LedBlink(GREEN,LED_4HZ);  
+    bResetIsOn = TRUE;         
+    bStartIsOn = TRUE;
+  }
+  
+  if(bStartIsOn)
+  {
+    
+    if ( WasButtonPressed(BUTTON0) )
+    {
+      ButtonAcknowledge(BUTTON0);
+      auPasswordElement[u8Index] = PASSWORD1;
+      u8Index++;    
+    }
+    
+   
+    if ( WasButtonPressed(BUTTON1) )
+    {
+      ButtonAcknowledge(BUTTON1);
+      auPasswordElement[u8Index] = PASSWORD2;
+      u8Index++;
+    }
+    
+    
+    if ( WasButtonPressed(BUTTON2) )
+    {
+      ButtonAcknowledge(BUTTON2);
+      auPasswordElement[u8Index] = PASSWORD3;
+      u8Index++;   
+    }
+    
+     
+    if (bResetIsOn)
+    {
+      
+      if (u8Index==10 && WasButtonPressed(BUTTON3) )
+      {
+        ButtonAcknowledge(BUTTON3);
+        for (u8Index=0; u8Index<10; u8Index++)
+        {
+          auPasswordNew[u8Index] = auPasswordElement[u8Index];
+        }
+          
+        u8Index = 0;          
+        bResetIsOn = FALSE;   
+        LedOff(GREEN);       
+        LedOn(RED);           
+      }
+      else  
+      {
+        ButtonAcknowledge(BUTTON3);
+      }
+    }
+    
+    
+    else
+    {
+      
+      if (u8Index == 10 && WasButtonPressed(BUTTON3) )
+      {
+        ButtonAcknowledge(BUTTON3);
+        
+         
+        for (u8Index = 0; u8Index<10; u8Index++)
+        {
+          if (auPasswordElement[u8Index] != auPasswordNew[u8Index])
+          {
+            break;
+          }
+        }
+        if (u8Index < 10)
+        {
+          LedOff(GREEN);
+          LedBlink(RED,LED_4HZ);
+          u8Index = 0;
+        }
+        else
+        {
+          LedOff(RED);
+          LedBlink(GREEN,LED_4HZ);
+          u8Index = 0;
+        }
+      }
+      else if (u8Index != 10 && WasButtonPressed(BUTTON3))
+      {
+        ButtonAcknowledge(BUTTON3);
+        LedOff(GREEN);
+        LedBlink(RED,LED_4HZ);
+        u8Index = 0;
+      }
+    }
+  }
 
 } /* end UserApp1SM_Idle() */
     
