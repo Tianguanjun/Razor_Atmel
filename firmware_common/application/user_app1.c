@@ -182,8 +182,12 @@ static void UserApp1SM_WaitChannelAssign(void)
 /* Wait for ??? */
 static void UserApp1SM_Idle(void)
 {
+  static u8 u8CurrentHR = 0;
+  static u8 u8BatteryLevel = 0;
   static u8 au8RequestMessage[] = {0x46, 0xFF, 0xFF, 0xFF, 0xFF, 0x80, 0x07, 0x01};
-  static u8 au8CurrentHRMessage[] = "Current H";
+  static u8 au8CurrentHRMessage[]    = "Current HR:     bpm ";
+  static u8 au8BatteryLevelMessage[] = "Battery Level:     %";
+  static bool bInMainStatus = TRUE;
   LedOn(RED);
   
   if( AntReadAppMessageBuffer() )
@@ -193,8 +197,28 @@ static void UserApp1SM_Idle(void)
     {
       LedOn(WHITE);
       /* We got some data */
-      LCDCommand(LCD_CLEAR_CMD);
-      
+      if (bInMainStatus)
+      {
+        u8CurrentHR = G_au8AntApiCurrentMessageBytes[7];
+        au8CurrentHRMessage[12] = HexToASCIICharUpper(u8CurrentHR/100);
+        au8CurrentHRMessage[13] = HexToASCIICharUpper(u8CurrentHR/10%10);
+        au8CurrentHRMessage[14] = HexToASCIICharUpper(u8CurrentHR%10);
+        LCDCommand(LCD_CLEAR_CMD);
+        LCDMessage(LINE1_START_ADDR, au8CurrentHRMessage);
+      }
+      else
+      {
+        AntQueueAcknowledgedMessage(ANT_CHANNEL_USERAPP, au8RequestMessage);
+        if (G_au8AntApiCurrentMessageBytes[0] == 0x07)
+        {
+          u8BatteryLevel = G_au8AntApiCurrentMessageBytes[1];
+          au8BatteryLevelMessage[15] = HexToASCIICharUpper(u8BatteryLevel/100);
+          au8BatteryLevelMessage[16] = HexToASCIICharUpper(u8BatteryLevel/10%10);
+          au8BatteryLevelMessage[17] = HexToASCIICharUpper(u8BatteryLevel%10);
+          LCDCommand(LCD_CLEAR_CMD);
+          LCDMessage(LINE1_START_ADDR, au8BatteryLevelMessage);
+        }
+      }
     }
     else if(G_eAntApiCurrentMessageClass == ANT_TICK)
     {
@@ -202,11 +226,18 @@ static void UserApp1SM_Idle(void)
     }
   } /* end AntReadAppMessageBuffer() */
   
+  /* Press BUTTON0 to view the battery level */
   if (WasButtonPressed(BUTTON0))
   {
     ButtonAcknowledge(BUTTON0);
-    LCDCommand(LCD_CLEAR_CMD);
-    AntQueueAcknowledgedMessage(ANT_CHANNEL_USERAPP, au8RequestMessage);
+    bInMainStatus = FALSE;
+  }
+  
+  /* Press BUTTON3 to return to main status */
+  if (WasButtonPressed(BUTTON3))
+  {
+    ButtonAcknowledge(BUTTON3);
+    bInMainStatus = TRUE;
   }
 
 } /* end UserApp1SM_Idle() */
